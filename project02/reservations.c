@@ -11,16 +11,17 @@ int transaction_count;
 
 int seat_taken_count = 0;
 
+pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 int is_free(int n)
 {
     // Returns true if the given seat is available.
 
     // TODO
-    return !seat_taken[n];
+    int is_free = !seat_taken[n];
 
-    // return 0;  // Change as necessary--included so it will build
+    return is_free;
 }
-
 
 int reserve_seat(int n)
 {
@@ -33,16 +34,20 @@ int reserve_seat(int n)
     // wasn't already taken.
     
     // TODO
+    int return_value;
+
+    pthread_mutex_lock(&lock_mutex);
     if (is_free(n)) {
         seat_taken[n] = 1;
         seat_taken_count++;
-        return 0;
+        pthread_mutex_unlock(&lock_mutex);
+        return_value = 0;
     } else {
-        return -1;
+        pthread_mutex_unlock(&lock_mutex);
+        return_value = -1;
     }
-        
 
-    // return 0;  // Change as necessary--included so it will build
+    return return_value;
 }
 
 int free_seat(int n)
@@ -56,15 +61,20 @@ int free_seat(int n)
     // wasn't already free.
 
     // TODO
+    int return_value;
+    
+    pthread_mutex_lock(&lock_mutex);
     if (is_free(n)) {
-        return -1;
+        pthread_mutex_unlock(&lock_mutex);
+        return_value = -1;
     } else {
         seat_taken[n] = 0;
         seat_taken_count--;
-        return 0;
+        pthread_mutex_unlock(&lock_mutex);
+        return_value = 0;
     }
 
-    // return 0;  // Change as necessary--included so it will build
+    return return_value;
 }
 
 int verify_seat_count(void) {
@@ -81,12 +91,16 @@ int verify_seat_count(void) {
     int count = 0;
 
     // Count all the taken seats
+    
+    pthread_mutex_lock(&lock_mutex);
     for (int i = 0; i < seat_count; i++)
         if (seat_taken[i])
             count++;
 
     // Return true if it's the same as seat_taken_count
-    return count == seat_taken_count;
+    int result = count == seat_taken_count;
+    pthread_mutex_unlock(&lock_mutex);
+    return result;
 }
 
 // ------------------- DO NOT MODIFY PAST THIS LINE -------------------
