@@ -22,8 +22,16 @@ int reserve_seat(int n)
     // wasn't already taken.
     
     // TODO
+    if (!seat_taken[n]) {
+        seat_taken[n] = 1;
+        seat_taken_count++;
+        return 0;
+    } else {
+        return -1;
+    }
+        
 
-    return 0;  // Change as necessary--included so it will build
+    // return 0;  // Change as necessary--included so it will build
 }
 
 int free_seat(int n)
@@ -45,8 +53,9 @@ int is_free(int n) {
     // Returns true if the given seat is available.
 
     // TODO
+    return !seat_taken[n];
 
-    return 0;  // Change as necessary--included so it will build
+    // return 0;  // Change as necessary--included so it will build
 }
 
 int verify_seat_count(void) {
@@ -133,4 +142,3 @@ int main(int argc, char *argv[])
     for (int i = 0; i < broker_count; i++)
         pthread_join(thread[i], NULL);
 }
-
