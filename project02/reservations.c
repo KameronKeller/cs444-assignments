@@ -11,6 +11,17 @@ int transaction_count;
 
 int seat_taken_count = 0;
 
+int is_free(int n)
+{
+    // Returns true if the given seat is available.
+
+    // TODO
+    return !seat_taken[n];
+
+    // return 0;  // Change as necessary--included so it will build
+}
+
+
 int reserve_seat(int n)
 {
     // Attempt to reserve seat number n
@@ -22,7 +33,7 @@ int reserve_seat(int n)
     // wasn't already taken.
     
     // TODO
-    if (!seat_taken[n]) {
+    if (is_free(n)) {
         seat_taken[n] = 1;
         seat_taken_count++;
         return 0;
@@ -45,15 +56,13 @@ int free_seat(int n)
     // wasn't already free.
 
     // TODO
-
-    return 0;  // Change as necessary--included so it will build
-}
-
-int is_free(int n) {
-    // Returns true if the given seat is available.
-
-    // TODO
-    return !seat_taken[n];
+    if (is_free(n)) {
+        return -1;
+    } else {
+        seat_taken[n] = 0;
+        seat_taken_count--;
+        return 0;
+    }
 
     // return 0;  // Change as necessary--included so it will build
 }
