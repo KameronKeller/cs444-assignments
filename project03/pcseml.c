@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include "eventbuf.h"
 
+struct eventbuf *eb;
+
 sem_t *sem_open_temp(const char *name, int value)
 {
     sem_t *sem;
@@ -42,12 +44,6 @@ int main(int argc, char *argv[])
     int num_events = convert_to_int(argv[3]);
     int num_outstanding = convert_to_int(argv[4]);
 
-    printf("%d\n", num_producers);
-    printf("%d\n", num_consumers);
-    printf("%d\n", num_events);
-    printf("%d\n", num_outstanding);
-
-    struct eventbuf *eb;
     eb = eventbuf_create();
     
     eventbuf_add(eb, 12);
