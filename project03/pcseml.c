@@ -9,7 +9,12 @@ sem_t *mutex;
 sem_t *fill;
 sem_t *empty;
 
-int num_events;
+// int num_events;
+
+struct producer_args {
+    int *producer_number;
+    int num_events;
+};
 
 sem_t *sem_open_temp(const char *name, int value)
 {
@@ -43,8 +48,12 @@ int convert_to_int(char *input)
 
 void *produce(void *arg)
 {
-    int *producer_number = arg;
-
+    struct producer_args *p_args = (struct producer_args*) arg;
+    // int *producer_number = arg;
+    int *producer_number = p_args->producer_number;
+    int num_events = p_args->num_events;
+    free(p_args);
+    
     for (int i = 0; i < num_events; i++) {
         int event_number = *producer_number * 100 + i;
         sem_wait(empty); // spaces.wait()
@@ -91,7 +100,7 @@ int main(int argc, char *argv[])
 
     int num_producers = convert_to_int(argv[1]);
     int num_consumers = convert_to_int(argv[2]);
-    num_events = convert_to_int(argv[3]);
+    int num_events = convert_to_int(argv[3]);
     int num_outstanding = convert_to_int(argv[4]);
 
     eb = eventbuf_create();
@@ -112,27 +121,33 @@ int main(int argc, char *argv[])
     fill = sem_open_temp("fill", 0);
     empty = sem_open_temp("empty", num_outstanding);
 
+    // Kick off producer threads
     for (int i = 0; i < num_producers; i++) {
+        struct producer_args *p_args = malloc(sizeof p_args);
+        p_args->producer_number = producer_thread_id + i;
+        p_args->num_events = num_events;
         producer_thread_id[i] = i;
-        pthread_create(producer_thread + i, NULL, produce, producer_thread_id + i);
+        // pthread_create(producer_thread + i, NULL, produce, producer_thread_id + i);
+        pthread_create(producer_thread + i, NULL, produce, p_args);
     }
 
+    // Kick off consumer threads
     for (int i = 0; i < num_consumers; i++) {
         consumer_thread_id[i] = i;
         pthread_create(consumer_thread + i, NULL, consume, consumer_thread_id + i);
     }
-    
 
-
+    // Join producer threads with the main thread
     for (int i = 0; i < num_producers; i++)
         pthread_join(producer_thread[i], NULL);
 
+    // Signal to the consumers that the event buffer is empty 
     for (int i = 0; i < num_consumers; i++) {
         sem_post(fill);
     }
 
+    // Join consumer threads with main thread
     for (int i = 0; i < num_consumers; i++) {
-        // sem_post(fill);
         pthread_join(consumer_thread[i], NULL);
     }
 
