@@ -1,3 +1,9 @@
+/*
+ * Kameron Keller
+ * OS 2 - Spring 2023
+ * Project 3
+ */
+
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,13 +15,13 @@ sem_t *mutex;
 sem_t *fill;
 sem_t *empty;
 
-// int num_events;
-
+// Struct for passing values to produce function
 struct producer_args {
     int *producer_number;
     int num_events;
 };
 
+// Semaphore creation function
 sem_t *sem_open_temp(const char *name, int value)
 {
     sem_t *sem;
@@ -33,6 +39,7 @@ sem_t *sem_open_temp(const char *name, int value)
     return sem;
 }
 
+// Validate correct number of args on the command line
 void validate_input(int argc) {
     if (argc != 5) {
         fprintf(stderr, "usage: pcseml num_producers num_consumers num_events num_oustanding\n");
@@ -40,31 +47,35 @@ void validate_input(int argc) {
     }
 }
 
+// Convert command line input to int
 int convert_to_int(char *input)
 {
     return (int)strtol(input, NULL, 10);
 }
 
-
+// Produce an event
 void *produce(void *arg)
 {
+    // Unpack the values from the struct
     struct producer_args *p_args = (struct producer_args*) arg;
-    // int *producer_number = arg;
     int *producer_number = p_args->producer_number;
     int num_events = p_args->num_events;
+
+    // Free the struct
     free(p_args);
-    
+
+    // Create the events
     for (int i = 0; i < num_events; i++) {
         int event_number = *producer_number * 100 + i;
-        sem_wait(empty); // spaces.wait()
-        sem_wait(mutex); // mutex.wait()
+        sem_wait(empty); // Wait for signal that there is room for an event
+        sem_wait(mutex); // Grab the mutex
         printf("P%d: adding event %d\n", *producer_number, event_number);
-        eventbuf_add(eb, event_number);
-        sem_post(mutex); // mutex.signal()
-        sem_post(fill); // items.signal()
+        eventbuf_add(eb, event_number); // Add the event
+        sem_post(mutex); // Release the mutex
+        sem_post(fill); // Signal to consumers that there is an event to consume
     }
-    printf("P%d: exiting\n", *producer_number);
 
+    printf("P%d: exiting\n", *producer_number);
 
     return NULL;
 }
@@ -75,21 +86,21 @@ void *consume(void *arg)
     int event;
 
     while(1) {
-        sem_wait(fill); //items.wait()
-        sem_wait(mutex); //mutex.wait()
+        sem_wait(fill); // Wait for signal from producers
+        sem_wait(mutex); // Grab the mutex
+
+        // If the buffer is empty, your work is done- exit.
         if (eventbuf_empty(eb)) {
-            sem_post(mutex);
+            sem_post(mutex); // Release the mutex
             printf("C%d: exiting\n", *consumer_number);
             break;
         } else {
-            event = eventbuf_get(eb); // event = buffer.get()
-            sem_post(mutex);
+            event = eventbuf_get(eb); // Grab the event
+            sem_post(mutex); // Release the mutex
             printf("C%d: got event %d\n", *consumer_number, event);
-            sem_post(empty);
+            sem_post(empty); // Signal to producers that there is room for another event
         }
-
     }
-
     return NULL;
 }
 
@@ -105,6 +116,16 @@ int main(int argc, char *argv[])
 
     eb = eventbuf_create();
 
+    // Initialize semaphores
+    // Semaphore as a mutex
+    mutex = sem_open_temp("mutex", 1);
+
+    // Semaphore for notifying consumers to begin consuming
+    fill = sem_open_temp("fill", 0);
+
+    // Semaphore for notifying producers the event buffer has space
+    empty = sem_open_temp("empty", num_outstanding);
+
     // Allocate thread handle array for all producers
     pthread_t *producer_thread = calloc(num_producers, sizeof *producer_thread);
 
@@ -117,9 +138,6 @@ int main(int argc, char *argv[])
     // Allocate thread ID array for all consumers
     int *consumer_thread_id = calloc(num_consumers, sizeof *consumer_thread_id);
 
-    mutex = sem_open_temp("mutex", 1);
-    fill = sem_open_temp("fill", 0);
-    empty = sem_open_temp("empty", num_outstanding);
 
     // Kick off producer threads
     for (int i = 0; i < num_producers; i++) {
