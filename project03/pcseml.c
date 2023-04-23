@@ -4,6 +4,7 @@
  * Project 3
  */
 
+#include <fcntl.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>

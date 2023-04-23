@@ -1,2 +1,2 @@
 pcseml: pcseml.c eventbuf.c
-	gcc -Wall -Wextra -o $@ $^
+	gcc -Wall -Wextra -o $@ $^ -pthread
