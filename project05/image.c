@@ -1,6 +1,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "image.h"
+
 int image_fd;
 
 int image_open(char *filename, int truncate)
