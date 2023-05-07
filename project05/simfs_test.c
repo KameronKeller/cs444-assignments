@@ -85,13 +85,30 @@ void test_find_free(void)
 
 void test_ialloc(void)
 {
-	int block_num = 514; // Randomly chosen block number
+	int inode_map = 1;
+
+	int block_num = 35;
 	int byte_num = block_num / 8;
 	int bit_num = block_num % 8;
 
+	image_fd = image_open("test", 0);
 	unsigned char test_data[BLOCK_SIZE];
 	initialize_block(test_data, 255);
+	bwrite(1, test_data);
+	int num = ialloc();
+	printf("num: %d\n", num);
+	CTEST_ASSERT(num == -1, "Test no free inodes in inode map");
 
+	initialize_block(test_data, 255);
+	test_data[byte_num] &= ~(1 << bit_num); // Mark as free
+	bwrite(1, test_data);
+	num = ialloc();
+	printf("num: %d\n", num);
+	CTEST_ASSERT(num == block_num, "Test ialloc finds the free inode");
+
+
+
+	image_close();
 }
 
 int main(void)
