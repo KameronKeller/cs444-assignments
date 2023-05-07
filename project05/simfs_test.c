@@ -31,18 +31,13 @@ void test_image_open_and_close(void)
 
 void test_block_write_and_read(void)
 {
-	int block_num = 0;
-	const int num_bytes = 4096;
-	unsigned char test_data[num_bytes] = {92}; // Initialize array block with zeros
-		// // printf("test_data: %d\n", test_data[2]);
-	image_open("test", 0); // Open the file
+	int block_num = 7;
+	unsigned char test_data[BLOCK_SIZE] = {0}; // Initialize array block with zeros
+	image_open("test_image", 0); // Open the file
 	bwrite(block_num, test_data);
 
-	unsigned char read_data[num_bytes];
+	unsigned char read_data[BLOCK_SIZE];
 	bread(block_num, read_data);
-	// // printf("return_data: %d\n", return_data[2]);
-	int diff = memcmp(test_data, read_data, num_bytes);
-	printf("diff: %d\n", diff);
 
 	CTEST_ASSERT(memcmp(test_data, read_data, 3) == 0, "Test bwrite and bread");
 	image_close();
