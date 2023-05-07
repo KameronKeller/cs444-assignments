@@ -10,7 +10,7 @@ int image_open(char *filename, int truncate)
     if (truncate) {
         image_fd = open(filename, O_TRUNC, 0600);
     } else {
-    	image_fd = open(filename, O_CREAT, 0600);
+    	image_fd = open(filename, O_RDWR | O_CREAT, 0600);
     }
 
 
