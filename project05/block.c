@@ -4,8 +4,6 @@
 #include "block.h"
 #include "image.h"
 
-# define BLOCK_SIZE 4096 // 4 KB block size
-
 off_t get_block_location(int block_num)
 {
 	off_t offset = block_num * BLOCK_SIZE;
@@ -15,11 +13,7 @@ off_t get_block_location(int block_num)
 
 unsigned char *bread(int block_num, unsigned char *block)
 {
-	// off_t offset = block_num * BLOCK_SIZE;
-	// off_t block_location = lseek(image_fd, offset, SEEK_SET);
 	off_t block_location = get_block_location(block_num);
-	// printf("bread %lld\n", block_location);
-	// printf("fd %d\n", image_fd);
 	if (block_location == -1) {
 		perror("bread(): File descriptor offset failed\n");
 		exit(1);
@@ -35,11 +29,7 @@ unsigned char *bread(int block_num, unsigned char *block)
 
 void bwrite(int block_num, unsigned char *block)
 {
-	// off_t offset = block_num * BLOCK_SIZE;
-	// off_t block_location = lseek(image_fd, offset, SEEK_SET);
 	off_t block_location = get_block_location(block_num);
-	// printf("bwrite %lld\n", block_location);
-	// printf("fd %d\n", image_fd);
 	if (block_location == -1) {
 		perror("bwrite(): File descriptor offset failed\n");
 		exit(1);
