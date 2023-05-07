@@ -11,6 +11,10 @@ unsigned char *bread(int block_num, unsigned char *block)
 	off_t offset = block_num * BLOCK_SIZE;
 	off_t block_location = lseek(image_fd, offset, SEEK_SET);
 	int bytes_read = read(block_location, block, BLOCK_SIZE);
+	if (bytes_read == -1) {
+		perror("Block read failed\n");
+		exit(1);
+	}
 
 	return block;
 }
@@ -19,12 +23,15 @@ void bwrite(int block_num, unsigned char *block)
 {
 	off_t offset = block_num * BLOCK_SIZE;
 	off_t block_location = lseek(image_fd, offset, SEEK_SET);
-	printf("%lld\n", block_location);
-	int bytes_written = write(image_fd, block, BLOCK_SIZE);
-	if (bytes_written == -1) {
-		printf("Failed to write\n");
+	if (block_location == -1) {
+		perror("File descriptor offset failed\n");
 		exit(1);
 	}
-	// printf("%d\n", bytes_written);
+	int bytes_written = write(image_fd, block, 4);
+	if (bytes_written == -1) {
+		perror("Block write failed\n");
+		exit(1);
+	}
+
 
 }
