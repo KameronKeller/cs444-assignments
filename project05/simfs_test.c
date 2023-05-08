@@ -5,6 +5,7 @@
 #include "block.h"
 #include "free.h"
 #include "inode.h"
+#include "mkfs.h"
 
 void initialize_block(unsigned char *block, int value) {
 	for (int i = 0; i < BLOCK_SIZE; i++) {
@@ -16,11 +17,11 @@ void initialize_block(unsigned char *block, int value) {
 
 void test_image_open_and_close(void)
 {
-	int image_fd = image_open("test", 0);
+	int image_fd = image_open("test", READ_WRITE);
 	CTEST_ASSERT(image_fd == 3, "Test create and open new image");
 	CTEST_ASSERT(image_close() == 0, "Test closing and image file");
 
-	image_fd = image_open("test", 1);
+	image_fd = image_open("test", TRUNCATE);
 	CTEST_ASSERT(image_fd == 3, "Test create and truncate new image");
 	CTEST_ASSERT(image_close() == 0, "Test closing truncated file");
 }
@@ -30,7 +31,7 @@ void test_block_write_and_read(void)
 	int block_num = 7;
 	unsigned char test_data[BLOCK_SIZE];
 	initialize_block(test_data, 0); // Initialize array block with zeros
-	image_open("test_image", 0); // Open the file
+	image_open("test_image", READ_WRITE); // Open the file
 	bwrite(block_num, test_data);
 
 	unsigned char read_data[BLOCK_SIZE];
@@ -75,11 +76,14 @@ void test_find_free(void)
 
 	unsigned char test_data[BLOCK_SIZE];
 	initialize_block(test_data, 255);
-	test_data[byte_num] &= ~(1 << bit_num); // Mark as free
+	
+	set_free(test_data, block_num, 0);
+	// test_data[byte_num] &= ~(1 << bit_num); // Mark as free
 	// for (int i = 60; i < 70; i++) {
 		// printf("i: %d, %d\n", i, test_data[i]);
 	// }
 	// printf("free_block: %d\n", find_free(test_data));
+
 	CTEST_ASSERT(find_free(test_data) == block_num, "Test find free finds free block");
 }
 
@@ -91,7 +95,7 @@ void test_ialloc(void)
 	int byte_num = block_num / 8;
 	int bit_num = block_num % 8;
 
-	image_fd = image_open("test", 0);
+	image_fd = image_open("test", READ_WRITE);
 	unsigned char test_data[BLOCK_SIZE];
 	initialize_block(test_data, 255);
 	bwrite(1, test_data);
@@ -111,6 +115,47 @@ void test_ialloc(void)
 	image_close();
 }
 
+void test_alloc(void)
+{
+	int block_map = 2;
+
+	int block_num = 35;
+	int byte_num = block_num / 8;
+	int bit_num = block_num % 8;
+
+	image_fd = image_open("test", READ_WRITE);
+	unsigned char test_data[BLOCK_SIZE];
+	initialize_block(test_data, 255);
+	bwrite(block_map, test_data);
+	int num = alloc();
+	printf("num: %d\n", num);
+	CTEST_ASSERT(num == -1, "Test no free blocks in block map");
+
+	initialize_block(test_data, 255);
+	test_data[byte_num] &= ~(1 << bit_num); // Mark as free
+	// set_free(test_data, block_num, 1);
+	bwrite(block_map, test_data);
+	num = alloc();
+	printf("num: %d\n", num);
+	CTEST_ASSERT(num == block_num, "Test alloc finds the free block");
+
+
+
+	image_close();	
+}
+
+void test_mkfs(void)
+{
+	image_open("test1", READ_WRITE);
+	mkfs();
+	unsigned char block[BLOCK_SIZE];
+	bread(2, block);
+	int free = find_free(block);
+	printf("free: %d\n", free);
+
+	image_close();
+}
+
 int main(void)
 {
     CTEST_VERBOSE(1);
@@ -120,6 +165,8 @@ int main(void)
 	test_set_free();
 	test_find_free();
 	test_ialloc();
+	test_alloc();
+	test_mkfs();
 
     CTEST_RESULTS();
 
