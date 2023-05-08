@@ -42,16 +42,20 @@ void bwrite(int block_num, unsigned char *block)
 }
 
 int alloc(void)
-{
+{	
+	// Create a block buffer
 	unsigned char block[BLOCK_SIZE];
+	// Read to the block buffer
 	bread(BLOCK_MAP, block);
+	// Find a free block
 	int num = find_free(block);
-	printf("num: %d\n", num);
 
+	// If no blocks available
 	if (num == 0) {
 		return FAILURE;
 	} else {
-		set_free(block, num, 1);
+		// Set the block in use and write to file
+		set_free(block, num, IN_USE);
 		bwrite(num, block);
 		return num;
 	}
