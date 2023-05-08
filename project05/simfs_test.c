@@ -138,8 +138,6 @@ void test_ialloc(void)
 	ialloc_num = ialloc();
 	CTEST_ASSERT(ialloc_num == num, "Test ialloc finds the free inode");
 
-
-
 	image_close();
 }
 
@@ -180,13 +178,23 @@ void test_alloc(void)
 
 void test_mkfs(void)
 {
+	// Expect next free block to be 7 (0-6 marked as in use)
+	int expected_next_free_block = 7;
+	// Open the image file
 	image_open("test_image", READ_WRITE);
+	
+	// Build the file system
 	mkfs();
+	
+	// Create a block buffer
 	unsigned char block[BLOCK_SIZE];
-	bread(2, block);
-	int free = find_free(block);
-	printf("free: %d\n", free);
 
+	// Read to the buffer
+	bread(BLOCK_MAP, block);
+
+	// Check what the next free block is
+	int next_free = find_free(block);
+	CTEST_ASSERT(next_free == expected_next_free_block, "Test expect next free block to be 7 after mkfs");
 	image_close();
 }
 
