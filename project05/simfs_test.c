@@ -95,8 +95,6 @@ void test_set_free(void)
 void test_find_free(void)
 {
 	int num = 514; // Random test value 
-	int byte_num = num / BYTE;
-	int bit_num = num % BYTE;
 
 	// Create a block filled with 1's
 	unsigned char test_block[BLOCK_SIZE];
@@ -111,26 +109,34 @@ void test_find_free(void)
 
 void test_ialloc(void)
 {
-	int inode_map = 1;
 
-	int block_num = 35;
-	int byte_num = block_num / BYTE;
-	int bit_num = block_num % BYTE;
+	int num = 35; // Random test value
 
-	image_fd = image_open("test", READ_WRITE);
+	// Open the test image
+	image_fd = image_open("test_image", READ_WRITE);
+
+	// Initialize a test block to all ones
 	unsigned char test_block[BLOCK_SIZE];
 	initialize_block(test_block, ALL_ONES);
-	bwrite(1, test_block);
-	int num = ialloc();
-	printf("num: %d\n", num);
-	CTEST_ASSERT(num == -1, "Test no free inodes in inode map");
 
+	// Write to the INODE MAP
+	bwrite(INODE_MAP, test_block);
+
+	// Attempt to allocate
+	int ialloc_num = ialloc();
+	CTEST_ASSERT(ialloc_num == FAILURE, "Test no free inodes in inode map");
+
+	// Reinitalize the test block to all ones
 	initialize_block(test_block, ALL_ONES);
-	test_block[byte_num] &= ~(1 << bit_num); // Mark as free
-	bwrite(1, test_block);
-	num = ialloc();
-	printf("num: %d\n", num);
-	CTEST_ASSERT(num == block_num, "Test ialloc finds the free inode");
+	// Set num as free
+	set_free(test_block, num, FREE);
+
+	// Write to the inode map
+	bwrite(INODE_MAP, test_block);
+
+	// Attempt to allocate
+	ialloc_num = ialloc();
+	CTEST_ASSERT(ialloc_num == num, "Test ialloc finds the free inode");
 
 
 
