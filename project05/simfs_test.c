@@ -20,18 +20,18 @@ void initialize_block(unsigned char *block, int value) {
 
 void test_image_open_and_close(void)
 {
-	int image_fd = image_open("test", READ_WRITE);
+	int image_fd = image_open("test_image", READ_WRITE);
 	CTEST_ASSERT(image_fd == 3, "Test create and open new image");
 	CTEST_ASSERT(image_close() == 0, "Test closing and image file");
 
-	image_fd = image_open("test", TRUNCATE);
+	image_fd = image_open("test_image", TRUNCATE);
 	CTEST_ASSERT(image_fd == 3, "Test create and truncate new image");
 	CTEST_ASSERT(image_close() == 0, "Test closing truncated file");
 }
 
 void test_get_block_location(void)
 {
-	image_open("test", READ_WRITE);
+	image_open("test_image", READ_WRITE);
 	int sample_block_number = 5;
 	int actual_block_location = sample_block_number * BLOCK_SIZE; 
 	off_t block_location = get_block_location(sample_block_number);
@@ -145,36 +145,42 @@ void test_ialloc(void)
 
 void test_alloc(void)
 {
-	int block_map = 2;
+	int num = 35; // Random test value
+	// int byte_num = num / BYTE;
+	// int bit_num = num % BYTE;
 
-	int block_num = 35;
-	int byte_num = block_num / BYTE;
-	int bit_num = block_num % BYTE;
+	// Open the test image
+	image_open("test_image", READ_WRITE);
 
-	image_fd = image_open("test", READ_WRITE);
+	// Initialize a test block to all ones
 	unsigned char test_block[BLOCK_SIZE];
 	initialize_block(test_block, ALL_ONES);
-	bwrite(block_map, test_block);
-	int num = alloc();
-	printf("num: %d\n", num);
-	CTEST_ASSERT(num == -1, "Test no free blocks in block map");
 
+	// Write the test block
+	bwrite(BLOCK_MAP, test_block);
+	
+	// Attempt to allocate
+	int alloc_num = alloc();
+	CTEST_ASSERT(alloc_num == FAILURE, "Test no free blocks in block map");
+
+	// Reinitalize the test block to all ones
 	initialize_block(test_block, ALL_ONES);
-	test_block[byte_num] &= ~(1 << bit_num); // Mark as free
-	// set_free(test_block, block_num, 1);
-	bwrite(block_map, test_block);
-	num = alloc();
-	printf("num: %d\n", num);
-	CTEST_ASSERT(num == block_num, "Test alloc finds the free block");
+	// Set num as free
+	set_free(test_block, num, FREE);
 
+	// Write to the block map
+	bwrite(BLOCK_MAP, test_block);
 
+	// Attempt to allocate
+	alloc_num = alloc();
+	CTEST_ASSERT(alloc_num == num, "Test alloc finds the free block");
 
 	image_close();	
 }
 
 void test_mkfs(void)
 {
-	image_open("test1", READ_WRITE);
+	image_open("test_image", READ_WRITE);
 	mkfs();
 	unsigned char block[BLOCK_SIZE];
 	bread(2, block);
