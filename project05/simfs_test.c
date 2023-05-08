@@ -38,16 +38,23 @@ void test_get_block_location(void)
 
 void test_block_write_and_read(void)
 {
-	int block_num = 7;
-	unsigned char test_data[BLOCK_SIZE];
-	initialize_block(test_data, 0); // Initialize array block with zeros
-	image_open("test_image", READ_WRITE); // Open the file
-	bwrite(block_num, test_data);
-
-	unsigned char read_data[BLOCK_SIZE];
-	bread(block_num, read_data);
-
-	CTEST_ASSERT(memcmp(test_data, read_data, BLOCK_SIZE) == 0, "Test write and read from the same block");
+	// Create test_block
+	unsigned char test_block[BLOCK_SIZE];
+	// Initialize array block with zeros
+	initialize_block(test_block, 0);
+	// Choose a block to test writing to
+	int block_num = 1;
+	// Open the file
+	image_open("test_image", READ_WRITE);
+	// Write to the test block
+	bwrite(block_num, test_block);
+	// Create a buffer to read from
+	unsigned char read_block[BLOCK_SIZE];
+	// Read the data
+	bread(block_num, read_block);
+	// Compare original to what was read
+	CTEST_ASSERT(memcmp(test_block, read_block, BLOCK_SIZE) == 0, "Test write and read from the same block");
+	// Close the image
 	image_close();
 }
 
