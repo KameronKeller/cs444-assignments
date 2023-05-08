@@ -26,6 +26,16 @@ void test_image_open_and_close(void)
 	CTEST_ASSERT(image_close() == 0, "Test closing truncated file");
 }
 
+void test_get_block_location(void)
+{
+	image_open("test", READ_WRITE);
+	int sample_block_number = 5;
+	int actual_block_location = sample_block_number * BLOCK_SIZE; 
+	off_t block_location = get_block_location(sample_block_number);
+	CTEST_ASSERT(actual_block_location == block_location, "Test calculating the block location");
+	image_close();
+}
+
 void test_block_write_and_read(void)
 {
 	int block_num = 7;
@@ -161,6 +171,7 @@ int main(void)
     CTEST_VERBOSE(1);
 
 	test_image_open_and_close();
+	test_get_block_location();
 	test_block_write_and_read();
 	test_set_free();
 	test_find_free();
