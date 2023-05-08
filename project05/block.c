@@ -51,12 +51,12 @@ int alloc(void)
 	int num = find_free(block);
 
 	// If no blocks available
-	if (num == 0) {
+	if (num == FAILURE) {
 		return FAILURE;
 	} else {
 		// Set the block in use and write to file
 		set_free(block, num, IN_USE);
-		bwrite(num, block);
+		bwrite(BLOCK_MAP, block);
 		return num;
 	}
 }
