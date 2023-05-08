@@ -12,7 +12,7 @@ int ialloc(void)
 	int num = find_free(block);
 
 	// If no free location, return 0
-	if (num == 0) {
+	if (num == FAILURE) {
 		return FAILURE;
 	} else {
 		// mark num as IN_USE

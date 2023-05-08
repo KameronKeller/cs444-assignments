@@ -43,5 +43,5 @@ int find_free(unsigned char *block)
 			return calculate_block_number(i, bit_num);
 		}
 	}
-	return 0;
+	return FAILURE;
 }
