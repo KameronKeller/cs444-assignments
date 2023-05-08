@@ -7,6 +7,9 @@
 #include "inode.h"
 #include "mkfs.h"
 
+#define ALL_ONES 255
+#define ZEROS 0
+
 void initialize_block(unsigned char *block, int value) {
 	for (int i = 0; i < BLOCK_SIZE; i++) {
 		block[i] = value;
@@ -60,48 +63,50 @@ void test_block_write_and_read(void)
 
 void test_set_free(void)
 {
-	int in_use = 1;
-	int free = 0;
+	int num = 500; // Random test value
+	int byte_num = num / BYTE;
+	int bit_num = num % BYTE;
 
-	int num = 500;
-	int byte_num = num / 8;  // 8 bits per byte
-	int bit_num = num % 8;
+	// Initialize the block with zeros
+	unsigned char test_block[BLOCK_SIZE];
+	initialize_block(test_block, ZEROS); 
 
-	unsigned char test_data[BLOCK_SIZE];
-	initialize_block(test_data, 0); // Initialize the block with zeros
+	// Mark the bit in use
+	set_free(test_block, num, IN_USE); 
 
-	set_free(test_data, num, in_use); // Mark the bit in use
 	// Get the bit from the character
-	unsigned char character = test_data[byte_num];
-	int bit = (character >> bit_num) & in_use;
+	unsigned char character = test_block[byte_num];
+	int bit = (character >> bit_num) & IN_USE;
 
-	CTEST_ASSERT(bit == in_use, "Test in use");
+	// Verify the bit matches what it was set to
+	CTEST_ASSERT(bit == IN_USE, "Test in use");
 
-	set_free(test_data, num, free); // Mark the bit free
+	// Mark the bit FREE
+	set_free(test_block, num, FREE); 
+
 	// Get the bit from the character
-	character = test_data[byte_num];
-	bit = (character >> bit_num) & free;	
+	character = test_block[byte_num];
+	bit = (character >> bit_num) & FREE;	
 
-	CTEST_ASSERT(bit == free, "Test free");
+	// Verify the bit matches what it was set to
+	CTEST_ASSERT(bit == FREE, "Test free");
 }
 
 void test_find_free(void)
 {
-	int block_num = 514; // Randomly chosen block number
-	int byte_num = block_num / 8;
-	int bit_num = block_num % 8;
+	int num = 514; // Random test value 
+	int byte_num = num / BYTE;
+	int bit_num = num % BYTE;
 
-	unsigned char test_data[BLOCK_SIZE];
-	initialize_block(test_data, 255);
+	// Create a block filled with 1's
+	unsigned char test_block[BLOCK_SIZE];
+	initialize_block(test_block, ALL_ONES);
 	
-	set_free(test_data, block_num, 0);
-	// test_data[byte_num] &= ~(1 << bit_num); // Mark as free
-	// for (int i = 60; i < 70; i++) {
-		// printf("i: %d, %d\n", i, test_data[i]);
-	// }
-	// printf("free_block: %d\n", find_free(test_data));
+	// Set a bit as FREE
+	set_free(test_block, num, FREE);
 
-	CTEST_ASSERT(find_free(test_data) == block_num, "Test find free finds free block");
+	// Check if find free locates the bit
+	CTEST_ASSERT(find_free(test_block) == num, "Test find free finds free block");
 }
 
 void test_ialloc(void)
@@ -109,20 +114,20 @@ void test_ialloc(void)
 	int inode_map = 1;
 
 	int block_num = 35;
-	int byte_num = block_num / 8;
-	int bit_num = block_num % 8;
+	int byte_num = block_num / BYTE;
+	int bit_num = block_num % BYTE;
 
 	image_fd = image_open("test", READ_WRITE);
-	unsigned char test_data[BLOCK_SIZE];
-	initialize_block(test_data, 255);
-	bwrite(1, test_data);
+	unsigned char test_block[BLOCK_SIZE];
+	initialize_block(test_block, ALL_ONES);
+	bwrite(1, test_block);
 	int num = ialloc();
 	printf("num: %d\n", num);
 	CTEST_ASSERT(num == -1, "Test no free inodes in inode map");
 
-	initialize_block(test_data, 255);
-	test_data[byte_num] &= ~(1 << bit_num); // Mark as free
-	bwrite(1, test_data);
+	initialize_block(test_block, ALL_ONES);
+	test_block[byte_num] &= ~(1 << bit_num); // Mark as free
+	bwrite(1, test_block);
 	num = ialloc();
 	printf("num: %d\n", num);
 	CTEST_ASSERT(num == block_num, "Test ialloc finds the free inode");
@@ -137,21 +142,21 @@ void test_alloc(void)
 	int block_map = 2;
 
 	int block_num = 35;
-	int byte_num = block_num / 8;
-	int bit_num = block_num % 8;
+	int byte_num = block_num / BYTE;
+	int bit_num = block_num % BYTE;
 
 	image_fd = image_open("test", READ_WRITE);
-	unsigned char test_data[BLOCK_SIZE];
-	initialize_block(test_data, 255);
-	bwrite(block_map, test_data);
+	unsigned char test_block[BLOCK_SIZE];
+	initialize_block(test_block, ALL_ONES);
+	bwrite(block_map, test_block);
 	int num = alloc();
 	printf("num: %d\n", num);
 	CTEST_ASSERT(num == -1, "Test no free blocks in block map");
 
-	initialize_block(test_data, 255);
-	test_data[byte_num] &= ~(1 << bit_num); // Mark as free
-	// set_free(test_data, block_num, 1);
-	bwrite(block_map, test_data);
+	initialize_block(test_block, ALL_ONES);
+	test_block[byte_num] &= ~(1 << bit_num); // Mark as free
+	// set_free(test_block, block_num, 1);
+	bwrite(block_map, test_block);
 	num = alloc();
 	printf("num: %d\n", num);
 	CTEST_ASSERT(num == block_num, "Test alloc finds the free block");
