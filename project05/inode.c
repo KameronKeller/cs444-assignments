@@ -18,7 +18,7 @@ int ialloc(void)
 		// mark num as IN_USE
 		set_free(block, num, IN_USE);
 		// Write to the block
-		bwrite(num, block);
+		bwrite(INODE_MAP, block);
 		return num;
 	}
 
