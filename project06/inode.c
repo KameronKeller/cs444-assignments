@@ -2,6 +2,8 @@
 #include "block.h"
 #include "free.h"
 
+static struct inode incore[MAX_SYS_OPEN_FILES] = {0};
+
 int ialloc(void)
 {
 	// Create a buffer block
