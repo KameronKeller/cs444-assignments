@@ -1,0 +1,6 @@
+# %.o: %.c
+#     gcc -Wall -Wextra -c -o $@ $<
+
+
+simfs_test: simfs_test.c image.o
+	gcc -Wall -Wextra -o $@ $^
