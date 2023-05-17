@@ -5,6 +5,13 @@
 
 static struct inode incore[MAX_SYS_OPEN_FILES] = {0};
 
+void clear_incore_inodes(void)
+{
+	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
+		incore[i].ref_count = 0;
+	}
+}
+
 int ialloc(void)
 {
 	// Create a buffer block
@@ -59,5 +66,15 @@ struct inode *find_incore(unsigned int inode_num)
 
 	// Otherwise return NULL
 	return NULL;
+
+}
+
+void read_inode(struct inode *in, int inode_num)
+{
+
+}
+
+void write_inode(struct inode *in)
+{
 
 }
