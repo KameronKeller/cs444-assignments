@@ -198,6 +198,17 @@ void test_mkfs(void)
 	image_close();
 }
 
+
+void test_find_incore(void)
+{
+	struct inode *free_inode = find_incore_free();
+	free_inode->inode_num = 34;
+	free_inode->ref_count = 1;
+	struct inode *found_incore = find_incore(34);
+	CTEST_ASSERT(memcmp(free_inode, found_incore, INODE_SIZE) == 0, "Test find free inode, then find by inode number");
+
+}
+
 int main(void)
 {
     CTEST_VERBOSE(1);
@@ -210,6 +221,7 @@ int main(void)
 	test_ialloc();
 	test_alloc();
 	test_mkfs();
+	test_find_incore();
 
     CTEST_RESULTS();
 
