@@ -8,6 +8,8 @@
 
 #define MAX_SYS_OPEN_FILES 64
 
+#define INODE_SIZE 64
+
 struct inode {
     unsigned int size;
     unsigned short owner_id;
@@ -22,5 +24,6 @@ struct inode {
 
 int ialloc(void);
 struct inode *find_incore_free(void);
+struct inode *find_incore(unsigned int inode_num);
 
 #endif
