@@ -33,14 +33,31 @@ struct inode *find_incore_free(void)
 	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
 		// For each incore, check if reference count is 0
 		struct inode *temp_incore = &incore[i];
-		int reference_count = temp_incore->ref_count;
 
 		// If it is, return it
-		if (reference_count == 0) {
+		if (temp_incore->ref_count == 0) {
 			return temp_incore;
 		}
 	}
 
 	// Otherwise return NULL
 	return NULL;
+}
+
+struct inode *find_incore(unsigned int inode_num)
+{
+	// Loop over the incore array
+	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
+		// For each incore, check if reference count is 0
+		struct inode *temp_incore = &incore[i];
+
+		// If it is, return it
+		if (temp_incore->inode_num == inode_num && temp_incore->ref_count != 0) {
+			return temp_incore;
+		}
+	}
+
+	// Otherwise return NULL
+	return NULL;
+
 }
