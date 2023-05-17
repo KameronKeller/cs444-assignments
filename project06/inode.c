@@ -1,6 +1,7 @@
 #include "inode.h"
 #include "block.h"
 #include "free.h"
+#include <stdio.h>
 
 static struct inode incore[MAX_SYS_OPEN_FILES] = {0};
 
@@ -24,4 +25,22 @@ int ialloc(void)
 		return num;
 	}
 
+}
+
+struct inode *find_incore_free(void)
+{
+	// Loop over the incore array
+	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
+		// For each incore, check if reference count is 0
+		struct inode *temp_incore = &incore[i];
+		int reference_count = temp_incore->ref_count;
+
+		// If it is, return it
+		if (reference_count == 0) {
+			return temp_incore;
+		}
+	}
+
+	// Otherwise return NULL
+	return NULL;
 }
