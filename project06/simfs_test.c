@@ -123,7 +123,8 @@ void test_ialloc(void)
 	bwrite(INODE_MAP, test_block);
 
 	// Attempt to allocate
-	int ialloc_num = ialloc();
+	struct inode *ialloc_inode = ialloc();
+	int ialloc_num = ialloc_inode->inode_num;
 	CTEST_ASSERT(ialloc_num == FAILURE, "Test no free inodes in inode map");
 
 	// Reinitalize the test block to all ones
@@ -135,7 +136,8 @@ void test_ialloc(void)
 	bwrite(INODE_MAP, test_block);
 
 	// Attempt to allocate
-	ialloc_num = ialloc();
+	ialloc_inode = ialloc();
+	ialloc_num = ialloc_inode->inode_num;
 	CTEST_ASSERT(ialloc_num == num, "Test ialloc finds the free inode");
 
 	image_close();
