@@ -117,3 +117,34 @@ void write_inode(struct inode *in)
 
 	bwrite(block_num, write_buffer);
 }
+
+struct inode *iget(int inode_num)
+{
+
+    // Search for the inode number in-core (find_incore())
+    struct inode *incore_inode = find_incore(inode_num);
+    // If found:
+    if (incore_inode != NULL) {
+    //     Increment the ref_count
+    	incore_inode->ref_count++;
+    //     Return the pointer
+    	return incore_inode;
+    } else {
+    // Find a free in-core inode (find_incore_free())
+    	struct inode *available_incore = find_incore_free();
+    // If none found:
+    	if (available_incore == NULL) {
+    //     Return NULL
+    		return NULL;
+    	}
+    // Read the data from disk into it (read_inode())
+    	read_inode(available_incore, inode_num);
+    // Set the inode's ref_count to 1
+    	available_incore->ref_count = 1;
+    // Set the inode's inode_num to the inode number that was passed in
+    	available_incore->inode_num = inode_num;
+    // Return the pointer to the inode
+    	return available_incore;
+    }
+
+}
