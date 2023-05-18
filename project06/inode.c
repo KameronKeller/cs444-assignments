@@ -1,6 +1,7 @@
 #include "inode.h"
 #include "block.h"
 #include "free.h"
+#include "pack.h"
 #include <stdio.h>
 
 static struct inode incore[MAX_SYS_OPEN_FILES] = {0};
@@ -71,6 +72,25 @@ struct inode *find_incore(unsigned int inode_num)
 
 void read_inode(struct inode *in, int inode_num)
 {
+	int block_num = inode_num / INODES_PER_BLOCK + INODE_FIRST_BLOCK;
+	int block_offset = inode_num % INODES_PER_BLOCK;
+	int block_offset_bytes = block_offset * INODE_SIZE;
+
+	// Assuming `block` is the array we read with `bread()`
+	unsigned char read_buffer[BLOCK_SIZE];
+	bread(block_num, read_buffer);
+
+    in->size = read_u32(read_buffer + block_offset_bytes);
+    in->owner_id = read_u16(read_buffer + block_offset_bytes + OWNER_ID_OFFSET);
+    in->permissions = read_u8(read_buffer + block_offset_bytes + PERMISSIONS_OFFSET);
+    in->flags = read_u8(read_buffer + block_offset_bytes + FLAGS_OFFSET);
+    in->link_count = read_u8(read_buffer + block_offset_bytes + LINK_COUNT_OFFSET);
+
+    int block_pointer_address = BLOCK_POINTER_OFFSET;
+    for (int i = 0; i < INODE_PTR_COUNT; i++) {
+    	in->block_ptr[i] = read_u16(read_buffer + block_offset_bytes + block_pointer_address);
+    	block_pointer_address += 2;
+    }
 
 }
 
