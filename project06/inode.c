@@ -148,3 +148,23 @@ struct inode *iget(int inode_num)
     }
 
 }
+
+void iput(struct inode *in)
+{
+    // If ref_count on in is already 0:
+	if (in->ref_count == 0) {
+    //     Return
+		return;
+	} else {
+    // Decrement ref_count
+		in->ref_count--;
+    // If ref_count is 0:
+		if (in->ref_count == 0) {
+    //     Save the inode to disk (write_inode())
+			write_inode(in);
+		}
+	}
+
+}
+
+
