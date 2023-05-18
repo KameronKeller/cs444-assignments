@@ -206,6 +206,34 @@ void test_find_incore(void)
 	free_inode->ref_count = 1;
 	struct inode *found_incore = find_incore(34);
 	CTEST_ASSERT(memcmp(free_inode, found_incore, INODE_SIZE) == 0, "Test find free inode, then find by inode number");
+}
+
+void test_read_write_inode(void)
+{
+	int fake_inode_num = 215;
+	image_open("test_image", READ_WRITE);
+	struct inode *new_inode = find_incore_free();
+
+	new_inode->inode_num = fake_inode_num;
+	new_inode->size = 123;
+	new_inode->owner_id = 1;
+	new_inode->permissions = 2;
+	new_inode->flags = 3;
+	new_inode->link_count = 4;
+	new_inode->block_ptr[0] = 5;
+	
+	write_inode(new_inode);
+	struct inode inode_read_buffer = {0};
+	read_inode(&inode_read_buffer, fake_inode_num);
+	image_close();
+
+	CTEST_ASSERT(new_inode->size == inode_read_buffer.size, "Test write/read size are equivalent");
+	CTEST_ASSERT(new_inode->owner_id == inode_read_buffer.owner_id, "Test write/read owner_id are equivalent");
+	CTEST_ASSERT(new_inode->permissions == inode_read_buffer.permissions, "Test write/read permissions are equivalent");
+	CTEST_ASSERT(new_inode->flags == inode_read_buffer.flags, "Test write/read flags are equivalent");
+	CTEST_ASSERT(new_inode->link_count == inode_read_buffer.link_count, "Test write/read link_count are equivalent");
+	CTEST_ASSERT(new_inode->block_ptr[0] == inode_read_buffer.block_ptr[0], "Test write/read block_ptr[0] are equivalent");
+
 
 }
 
@@ -222,6 +250,7 @@ int main(void)
 	test_alloc();
 	test_mkfs();
 	test_find_incore();
+	test_read_write_inode();
 
     CTEST_RESULTS();
 
