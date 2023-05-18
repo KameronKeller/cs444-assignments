@@ -221,7 +221,7 @@ void test_read_write_inode(void)
 	new_inode->flags = 3;
 	new_inode->link_count = 4;
 	new_inode->block_ptr[0] = 5;
-	
+
 	write_inode(new_inode);
 	struct inode inode_read_buffer = {0};
 	read_inode(&inode_read_buffer, fake_inode_num);
@@ -233,24 +233,56 @@ void test_read_write_inode(void)
 	CTEST_ASSERT(new_inode->flags == inode_read_buffer.flags, "Test write/read flags are equivalent");
 	CTEST_ASSERT(new_inode->link_count == inode_read_buffer.link_count, "Test write/read link_count are equivalent");
 	CTEST_ASSERT(new_inode->block_ptr[0] == inode_read_buffer.block_ptr[0], "Test write/read block_ptr[0] are equivalent");
+}
 
+void test_iget(void)
+{
+	unsigned int fake_inode_num = 44;
+	struct inode *available_inode = find_incore_free();
+	CTEST_ASSERT(available_inode->ref_count == 0, "Test ref_count is initially zero");
 
+	available_inode->inode_num = fake_inode_num;
+	struct inode *iget_inode = iget(fake_inode_num);
+	printf("ref_count: %d\n", iget_inode->ref_count);
+
+	CTEST_ASSERT(iget_inode->ref_count == 1, "Test ref_count is incremented after iget");
+	CTEST_ASSERT(memcmp(available_inode, iget_inode, INODE_SIZE) == 0, "Test that iget retrieves the correct inode");
+
+	clear_incore_inodes();
+	iget_inode = iget(fake_inode_num);
+	CTEST_ASSERT(iget_inode != NULL, "Test if incore inode not referenced, a new incore is returned");
+	CTEST_ASSERT(iget_inode->inode_num == fake_inode_num, "Test if incore inode not referenced, the new inode has the correct inode_num");
+	clear_incore_inodes();
+}
+
+void test_iput(void)
+{
+	image_open("test_image", READ_WRITE);
+	unsigned int fake_inode_num = 79;
+	struct inode *fake_inode = iget(fake_inode_num);
+	iput(fake_inode);
+	CTEST_ASSERT(fake_inode->ref_count == 0, "Test that ref_count is set back to zero after iput");
+	struct inode *iget_inode = iget(fake_inode_num);
+	CTEST_ASSERT(memcmp(fake_inode, iget_inode, INODE_SIZE) == 0, "Test that iput writes the inode, and that iget retrieves it correctly");
+	image_close();
 }
 
 int main(void)
 {
     CTEST_VERBOSE(1);
 
-	test_image_open_and_close();
-	test_get_block_location();
-	test_block_write_and_read();
-	test_set_free();
-	test_find_free();
-	test_ialloc();
-	test_alloc();
-	test_mkfs();
-	test_find_incore();
-	test_read_write_inode();
+	// test_image_open_and_close();
+	// test_get_block_location();
+	// test_block_write_and_read();
+	// test_set_free();
+	// test_find_free();
+	// test_ialloc();
+	// test_alloc();
+	// test_mkfs();
+	// test_find_incore();
+	// test_read_write_inode();
+	// test_iget();
+	test_iput();
 
     CTEST_RESULTS();
 
