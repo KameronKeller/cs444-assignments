@@ -13,7 +13,19 @@ void clear_incore_inodes(void)
 	}
 }
 
-int ialloc(void)
+void initialize_incore_inode(struct inode *in, int inode_num)
+{
+	in->size = 0;
+	in->owner_id = 0;
+	in->permissions = 0;
+	in->flags = 0;
+    for (int i = 0; i < INODE_PTR_COUNT; i++) {
+    	in->block_ptr[i] = 0;
+    }
+    in->inode_num = inode_num;
+}
+
+struct inode *ialloc(void)
 {
 	// Create a buffer block
 	unsigned char block[BLOCK_SIZE];
@@ -24,14 +36,32 @@ int ialloc(void)
 
 	// If no free location, return 0
 	if (num == FAILURE) {
-		return FAILURE;
+		return NULL;
 	} else {
 		// mark num as IN_USE
 		set_free(block, num, IN_USE);
 		// Write to the block
 		bwrite(INODE_MAP, block);
-		return num;
+		// return num;
+
+	    // Get an in-core version of the inode (iget())
+		struct inode *incore_inode = iget(num);
+
+	    // If not found:
+	    if (incore_inode == NULL) {
+	    //     Return NULL
+	    	return NULL;
+	    } else {
+		    // Initialize the inode:
+	    	initialize_incore_inode(incore_inode, num);
+		    // Save the inode to disk (write_inode())
+	    	write_inode(incore_inode);
+		    // Return the pointer to the in-core inode.
+	    	return incore_inode;
+	    }
 	}
+
+
 
 }
 
