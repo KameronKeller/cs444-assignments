@@ -39,5 +39,6 @@ void read_inode(struct inode *in, int inode_num);
 void write_inode(struct inode *in);
 void clear_incore_inodes(void);
 struct inode *iget(int inode_num);
+void iput(struct inode *in);
 
 #endif
