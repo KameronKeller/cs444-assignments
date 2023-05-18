@@ -76,7 +76,6 @@ void read_inode(struct inode *in, int inode_num)
 	int block_offset = inode_num % INODES_PER_BLOCK;
 	int block_offset_bytes = block_offset * INODE_SIZE;
 
-	// Assuming `block` is the array we read with `bread()`
 	unsigned char read_buffer[BLOCK_SIZE];
 	bread(block_num, read_buffer);
 
@@ -96,5 +95,25 @@ void read_inode(struct inode *in, int inode_num)
 
 void write_inode(struct inode *in)
 {
+	int inode_num = in->inode_num;
 
+	int block_num = inode_num / INODES_PER_BLOCK + INODE_FIRST_BLOCK;
+	int block_offset = inode_num % INODES_PER_BLOCK;
+	int block_offset_bytes = block_offset * INODE_SIZE;
+
+	unsigned char write_buffer[BLOCK_SIZE];
+
+    write_u32(write_buffer + block_offset_bytes, in->size);
+    write_u16(write_buffer + block_offset_bytes + OWNER_ID_OFFSET, in->owner_id);
+    write_u8(write_buffer + block_offset_bytes + PERMISSIONS_OFFSET, in->permissions);
+    write_u8(write_buffer + block_offset_bytes + FLAGS_OFFSET, in->flags);
+    write_u8(write_buffer + block_offset_bytes + LINK_COUNT_OFFSET, in->link_count);
+
+    int block_pointer_address = BLOCK_POINTER_OFFSET;
+    for (int i = 0; i < INODE_PTR_COUNT; i++) {
+    	write_u16(write_buffer + block_offset_bytes + block_pointer_address, in->block_ptr[i]);
+    	block_pointer_address += 2;
+    }
+
+	bwrite(block_num, write_buffer);
 }
