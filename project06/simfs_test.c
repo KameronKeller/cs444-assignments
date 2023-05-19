@@ -124,8 +124,8 @@ void test_ialloc(void)
 
 	// Attempt to allocate
 	struct inode *ialloc_inode = ialloc();
-	int ialloc_num = ialloc_inode->inode_num;
-	CTEST_ASSERT(ialloc_num == FAILURE, "Test no free inodes in inode map");
+	// int ialloc_num = ialloc_inode->inode_num;
+	CTEST_ASSERT(ialloc_inode == NULL, "Test no free inodes in inode map");
 
 	// Reinitalize the test block to all ones
 	initialize_block(test_block, ALL_ONES);
@@ -137,7 +137,7 @@ void test_ialloc(void)
 
 	// Attempt to allocate
 	ialloc_inode = ialloc();
-	ialloc_num = ialloc_inode->inode_num;
+	int ialloc_num = ialloc_inode->inode_num;
 	CTEST_ASSERT(ialloc_num == num, "Test ialloc finds the free inode");
 
 	image_close();
@@ -239,6 +239,7 @@ void test_read_write_inode(void)
 
 void test_iget(void)
 {
+	image_open("test_image", READ_WRITE);
 	unsigned int fake_inode_num = 44;
 	struct inode *available_inode = find_incore_free();
 	CTEST_ASSERT(available_inode->ref_count == 0, "Test ref_count is initially zero");
@@ -255,6 +256,7 @@ void test_iget(void)
 	CTEST_ASSERT(iget_inode != NULL, "Test if incore inode not referenced, a new incore is returned");
 	CTEST_ASSERT(iget_inode->inode_num == fake_inode_num, "Test if incore inode not referenced, the new inode has the correct inode_num");
 	clear_incore_inodes();
+	image_close();
 }
 
 void test_iput(void)
@@ -273,17 +275,17 @@ int main(void)
 {
     CTEST_VERBOSE(1);
 
-	// test_image_open_and_close();
-	// test_get_block_location();
-	// test_block_write_and_read();
-	// test_set_free();
-	// test_find_free();
-	// test_ialloc();
-	// test_alloc();
-	// test_mkfs();
-	// test_find_incore();
-	// test_read_write_inode();
-	// test_iget();
+	test_image_open_and_close();
+	test_get_block_location();
+	test_block_write_and_read();
+	test_set_free();
+	test_find_free();
+	test_ialloc();
+	test_alloc();
+	test_mkfs();
+	test_find_incore();
+	test_read_write_inode();
+	test_iget();
 	test_iput();
 
     CTEST_RESULTS();
