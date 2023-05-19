@@ -2,6 +2,7 @@
 #include "block.h"
 #include "free.h"
 #include "pack.h"
+#include <string.h>
 #include <stdio.h>
 
 static struct inode incore[MAX_SYS_OPEN_FILES] = {0};
@@ -23,6 +24,7 @@ void mark_all_incore_in_use(void)
 
 void initialize_incore_inode(struct inode *in, int inode_num)
 {
+	// Set all values to 0
 	in->size = 0;
 	in->owner_id = 0;
 	in->permissions = 0;
@@ -30,6 +32,7 @@ void initialize_incore_inode(struct inode *in, int inode_num)
     for (int i = 0; i < INODE_PTR_COUNT; i++) {
     	in->block_ptr[i] = 0;
     }
+    // Set the inode number
     in->inode_num = inode_num;
 }
 
@@ -98,24 +101,28 @@ struct inode *find_incore(unsigned int inode_num)
 
 	// Otherwise return NULL
 	return NULL;
-
 }
 
 void read_inode(struct inode *in, int inode_num)
 {
+	// Calculate the block/offset/offset in bytes
 	int block_num = inode_num / INODES_PER_BLOCK + INODE_FIRST_BLOCK;
 	int block_offset = inode_num % INODES_PER_BLOCK;
 	int block_offset_bytes = block_offset * INODE_SIZE;
 
+	// Create a buffer to read to
 	unsigned char read_buffer[BLOCK_SIZE];
+	// Read the block to the buffer
 	bread(block_num, read_buffer);
 
+	// Read from the buffer and store in in the inode
     in->size = read_u32(read_buffer + block_offset_bytes);
     in->owner_id = read_u16(read_buffer + block_offset_bytes + OWNER_ID_OFFSET);
     in->permissions = read_u8(read_buffer + block_offset_bytes + PERMISSIONS_OFFSET);
     in->flags = read_u8(read_buffer + block_offset_bytes + FLAGS_OFFSET);
     in->link_count = read_u8(read_buffer + block_offset_bytes + LINK_COUNT_OFFSET);
 
+    // Read all of the block pointers to the inode
     int block_pointer_address = BLOCK_POINTER_OFFSET;
     for (int i = 0; i < INODE_PTR_COUNT; i++) {
     	in->block_ptr[i] = read_u16(read_buffer + block_offset_bytes + block_pointer_address);
@@ -126,26 +133,32 @@ void read_inode(struct inode *in, int inode_num)
 
 void write_inode(struct inode *in)
 {
+	// Get the inode number
 	int inode_num = in->inode_num;
 
+	// Calculate the block/offset/offset in bytes
 	int block_num = inode_num / INODES_PER_BLOCK + INODE_FIRST_BLOCK;
 	int block_offset = inode_num % INODES_PER_BLOCK;
 	int block_offset_bytes = block_offset * INODE_SIZE;
 
+	// Create a buffer to write to
 	unsigned char write_buffer[BLOCK_SIZE];
 
+	// Write to the buffer
     write_u32(write_buffer + block_offset_bytes, in->size);
     write_u16(write_buffer + block_offset_bytes + OWNER_ID_OFFSET, in->owner_id);
     write_u8(write_buffer + block_offset_bytes + PERMISSIONS_OFFSET, in->permissions);
     write_u8(write_buffer + block_offset_bytes + FLAGS_OFFSET, in->flags);
     write_u8(write_buffer + block_offset_bytes + LINK_COUNT_OFFSET, in->link_count);
 
+    // For each block pointer, write to the buffer
     int block_pointer_address = BLOCK_POINTER_OFFSET;
     for (int i = 0; i < INODE_PTR_COUNT; i++) {
     	write_u16(write_buffer + block_offset_bytes + block_pointer_address, in->block_ptr[i]);
     	block_pointer_address += 2;
     }
 
+    // Write the block to disk
 	bwrite(block_num, write_buffer);
 }
 
@@ -156,25 +169,24 @@ struct inode *iget(int inode_num)
     struct inode *incore_inode = find_incore(inode_num);
     // If found:
     if (incore_inode != NULL) {
-    //     Increment the ref_count
+	    // Increment the ref_count
     	incore_inode->ref_count++;
-    //     Return the pointer
+	    // Return the pointer
     	return incore_inode;
     } else {
-    // Find a free in-core inode (find_incore_free())
+	    // Find a free in-core inode (find_incore_free())
     	struct inode *available_incore = find_incore_free();
-    // If none found:
+	    // If none found:
     	if (available_incore == NULL) {
-    //     Return NULL
     		return NULL;
     	}
-    // Read the data from disk into it (read_inode())
+	    // Read the data from disk into it (read_inode())
     	read_inode(available_incore, inode_num);
-    // Set the inode's ref_count to 1
+	    // Set the inode's ref_count to 1
     	available_incore->ref_count = 1;
-    // Set the inode's inode_num to the inode number that was passed in
+	    // Set the inode's inode_num to the inode number that was passed in
     	available_incore->inode_num = inode_num;
-    // Return the pointer to the inode
+	    // Return the pointer to the inode
     	return available_incore;
     }
 
@@ -184,14 +196,13 @@ void iput(struct inode *in)
 {
     // If ref_count on in is already 0:
 	if (in->ref_count == 0) {
-    //     Return
 		return;
 	} else {
-    // Decrement ref_count
+	    // Decrement ref_count
 		in->ref_count--;
-    // If ref_count is 0:
+	    // If ref_count is 0:
 		if (in->ref_count == 0) {
-    //     Save the inode to disk (write_inode())
+		    // Save the inode to disk (write_inode())
 			write_inode(in);
 		}
 	}
