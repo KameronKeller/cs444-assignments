@@ -139,12 +139,12 @@ void test_ialloc(void)
 	int ialloc_num = ialloc_inode->inode_num;
 	CTEST_ASSERT(ialloc_num == num, "Test ialloc finds the free inode");
 
-
-	clear_incore_inodes();
+	// Mark all incores in use
 	mark_all_incore_in_use();
+	// Attemp to allocate
 	ialloc_inode = ialloc();
+	// Verify no incore inode is located
 	CTEST_ASSERT(ialloc_inode == NULL, "Test no free incore inodes");
-
 
 	image_close();
 }
@@ -152,8 +152,6 @@ void test_ialloc(void)
 void test_alloc(void)
 {
 	int num = 35; // Random test value
-	// int byte_num = num / BYTE;
-	// int bit_num = num % BYTE;
 
 	// Open the test image
 	image_open("test_image", READ_WRITE);
@@ -209,30 +207,43 @@ void test_mkfs(void)
 
 void test_find_incore(void)
 {
+	unsigned int fake_inode_num = 34;
+	// Clear all incore inodes
 	clear_incore_inodes();
+	// Find a free incore
 	struct inode *free_inode = find_incore_free();
-	free_inode->inode_num = 34;
+	// Set the inode_num and ref_count
+	free_inode->inode_num = fake_inode_num;
 	free_inode->ref_count = 1;
-	struct inode *found_incore = find_incore(34);
+	// Test finding the incore inode
+	struct inode *found_incore = find_incore(fake_inode_num);
 	CTEST_ASSERT(memcmp(free_inode, found_incore, INODE_SIZE) == 0, "Test find free inode, then find by inode number");
 
-	clear_incore_inodes();
+	// Mark all incores as in use
 	mark_all_incore_in_use();
+	// Attempt to find a free incore
 	free_inode = find_incore_free();
+	// Verify none are found
 	CTEST_ASSERT(free_inode == NULL, "Test no free incore inodes");
 
+	// Clear all inodes
 	clear_incore_inodes();
 
-	free_inode = find_incore(34);
-	CTEST_ASSERT(free_inode == NULL, "Test no free incore inodes");	
+	// Look for the specified inode
+	free_inode = find_incore(fake_inode_num);
+
+	// Verify none found because ref_count is 0 on all incores
+	CTEST_ASSERT(free_inode == NULL, "Test no incore inode found in use with the given inode number");	
 }
 
 void test_read_write_inode(void)
 {
-	int fake_inode_num = 215;
+	unsigned int fake_inode_num = 215;
 	image_open("test_image", READ_WRITE);
+	// Find a free incore inode
 	struct inode *new_inode = find_incore_free();
 
+	// Fill with fake data
 	new_inode->inode_num = fake_inode_num;
 	new_inode->size = 123;
 	new_inode->owner_id = 1;
@@ -241,11 +252,15 @@ void test_read_write_inode(void)
 	new_inode->link_count = 4;
 	new_inode->block_ptr[0] = 5;
 
+	// Write the inode to file
 	write_inode(new_inode);
+	// Create a read buffer
 	struct inode inode_read_buffer = {0};
+	// Read the inode back to the buffer
 	read_inode(&inode_read_buffer, fake_inode_num);
 	image_close();
 
+	// Test that inode read matches the inode written to disk
 	CTEST_ASSERT(new_inode->size == inode_read_buffer.size, "Test write/read size are equivalent");
 	CTEST_ASSERT(new_inode->owner_id == inode_read_buffer.owner_id, "Test write/read owner_id are equivalent");
 	CTEST_ASSERT(new_inode->permissions == inode_read_buffer.permissions, "Test write/read permissions are equivalent");
@@ -258,25 +273,43 @@ void test_iget(void)
 {
 	image_open("test_image", READ_WRITE);
 	unsigned int fake_inode_num = 44;
+
+	// find an available inode
 	struct inode *available_inode = find_incore_free();
+
+	// Verify the reference count is initially zero
 	CTEST_ASSERT(available_inode->ref_count == 0, "Test ref_count is initially zero");
 
+	// Assign an inode number to the inode and use iget to get the inode
 	available_inode->inode_num = fake_inode_num;
 	struct inode *iget_inode = iget(fake_inode_num);
 
+	// Verify the reference count is incremented
 	CTEST_ASSERT(iget_inode->ref_count == 1, "Test ref_count is incremented after iget");
+
+	// Verify the correct inode is retrieved
 	CTEST_ASSERT(memcmp(available_inode, iget_inode, INODE_SIZE) == 0, "Test that iget retrieves the correct inode");
 
-	clear_incore_inodes();
-	iget_inode = iget(fake_inode_num);
-	CTEST_ASSERT(iget_inode != NULL, "Test if incore inode not referenced, a new incore is returned");
-	CTEST_ASSERT(iget_inode->inode_num == fake_inode_num, "Test if incore inode not referenced, the new inode has the correct inode_num");
+	// Reset the incore inodes
 	clear_incore_inodes();
 
+	// Attempt to get the specified inode
+	iget_inode = iget(fake_inode_num);
+
+	// Verify an incore inode is returned
+	CTEST_ASSERT(iget_inode != NULL, "Test if incore inode not referenced, a new incore is returned");
+	CTEST_ASSERT(iget_inode->inode_num == fake_inode_num, "Test if incore inode not referenced, the new inode has the correct inode_num");
+
+	unsigned int new_inode_num = 256;
+
+	// Mark all inodes in use
 	mark_all_incore_in_use();
-	printf("aaaa\n");
-	iget_inode = iget(5415151);
+
+	// Attempt to get an inode that doesn't exit
+	iget_inode = iget(new_inode_num);
 	CTEST_ASSERT(iget_inode == NULL, "Test the inode number doesn't exist and there are no free incore inodes");
+
+	// Reset all incore inodes to 0
 	clear_incore_inodes();
 	image_close();
 }
@@ -284,10 +317,17 @@ void test_iget(void)
 void test_iput(void)
 {
 	image_open("test_image", READ_WRITE);
+	// Get the specified inode
 	unsigned int fake_inode_num = 79;
 	struct inode *fake_inode = iget(fake_inode_num);
+
+	// Test putting the inode back
 	iput(fake_inode);
+
+	// Verify ref count is decremented
 	CTEST_ASSERT(fake_inode->ref_count == 0, "Test that ref_count is set back to zero after iput");
+
+	// Compare the original inode and the gotten inode
 	struct inode *iget_inode = iget(fake_inode_num);
 	CTEST_ASSERT(memcmp(fake_inode, iget_inode, INODE_SIZE) == 0, "Test that iput writes the inode, and that iget retrieves it correctly");
 	image_close();
