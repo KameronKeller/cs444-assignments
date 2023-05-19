@@ -124,7 +124,6 @@ void test_ialloc(void)
 
 	// Attempt to allocate
 	struct inode *ialloc_inode = ialloc();
-	// int ialloc_num = ialloc_inode->inode_num;
 	CTEST_ASSERT(ialloc_inode == NULL, "Test no free inodes in inode map");
 
 	// Reinitalize the test block to all ones
@@ -139,6 +138,13 @@ void test_ialloc(void)
 	ialloc_inode = ialloc();
 	int ialloc_num = ialloc_inode->inode_num;
 	CTEST_ASSERT(ialloc_num == num, "Test ialloc finds the free inode");
+
+
+	clear_incore_inodes();
+	mark_all_incore_in_use();
+	ialloc_inode = ialloc();
+	CTEST_ASSERT(ialloc_inode == NULL, "Test no free incore inodes");
+
 
 	image_close();
 }
@@ -203,11 +209,22 @@ void test_mkfs(void)
 
 void test_find_incore(void)
 {
+	clear_incore_inodes();
 	struct inode *free_inode = find_incore_free();
 	free_inode->inode_num = 34;
 	free_inode->ref_count = 1;
 	struct inode *found_incore = find_incore(34);
 	CTEST_ASSERT(memcmp(free_inode, found_incore, INODE_SIZE) == 0, "Test find free inode, then find by inode number");
+
+	clear_incore_inodes();
+	mark_all_incore_in_use();
+	free_inode = find_incore_free();
+	CTEST_ASSERT(free_inode == NULL, "Test no free incore inodes");
+
+	clear_incore_inodes();
+
+	free_inode = find_incore(34);
+	CTEST_ASSERT(free_inode == NULL, "Test no free incore inodes");	
 }
 
 void test_read_write_inode(void)
@@ -246,7 +263,6 @@ void test_iget(void)
 
 	available_inode->inode_num = fake_inode_num;
 	struct inode *iget_inode = iget(fake_inode_num);
-	printf("ref_count: %d\n", iget_inode->ref_count);
 
 	CTEST_ASSERT(iget_inode->ref_count == 1, "Test ref_count is incremented after iget");
 	CTEST_ASSERT(memcmp(available_inode, iget_inode, INODE_SIZE) == 0, "Test that iget retrieves the correct inode");
@@ -255,6 +271,12 @@ void test_iget(void)
 	iget_inode = iget(fake_inode_num);
 	CTEST_ASSERT(iget_inode != NULL, "Test if incore inode not referenced, a new incore is returned");
 	CTEST_ASSERT(iget_inode->inode_num == fake_inode_num, "Test if incore inode not referenced, the new inode has the correct inode_num");
+	clear_incore_inodes();
+
+	mark_all_incore_in_use();
+	printf("aaaa\n");
+	iget_inode = iget(5415151);
+	CTEST_ASSERT(iget_inode == NULL, "Test the inode number doesn't exist and there are no free incore inodes");
 	clear_incore_inodes();
 	image_close();
 }
