@@ -9,7 +9,15 @@ static struct inode incore[MAX_SYS_OPEN_FILES] = {0};
 void clear_incore_inodes(void)
 {
 	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
+		// printf("ref::: %d\n", incore[i].ref_count);
 		incore[i].ref_count = 0;
+	}
+}
+
+void mark_all_incore_in_use(void)
+{
+	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
+		incore[i].ref_count = 1;
 	}
 }
 
@@ -34,7 +42,7 @@ struct inode *ialloc(void)
 	// Find the free location
 	int num = find_free(block);
 
-	// If no free location, return 0
+	// If no free location, return NULL
 	if (num == FAILURE) {
 		return NULL;
 	} else {
@@ -42,14 +50,10 @@ struct inode *ialloc(void)
 		set_free(block, num, IN_USE);
 		// Write to the block
 		bwrite(INODE_MAP, block);
-		// return num;
-
 	    // Get an in-core version of the inode (iget())
 		struct inode *incore_inode = iget(num);
-
 	    // If not found:
 	    if (incore_inode == NULL) {
-	    //     Return NULL
 	    	return NULL;
 	    } else {
 		    // Initialize the inode:
@@ -60,9 +64,6 @@ struct inode *ialloc(void)
 	    	return incore_inode;
 	    }
 	}
-
-
-
 }
 
 struct inode *find_incore_free(void)

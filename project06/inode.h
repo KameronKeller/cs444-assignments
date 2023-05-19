@@ -32,12 +32,14 @@ struct inode {
     unsigned int inode_num;
 };
 
+void clear_incore_inodes(void);
+void mark_all_incore_in_use(void);
+void initialize_incore_inode(struct inode *in, int inode_num);
 struct inode *ialloc(void);
 struct inode *find_incore_free(void);
 struct inode *find_incore(unsigned int inode_num);
 void read_inode(struct inode *in, int inode_num);
 void write_inode(struct inode *in);
-void clear_incore_inodes(void);
 struct inode *iget(int inode_num);
 void iput(struct inode *in);
 
