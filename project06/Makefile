@@ -1,6 +1,5 @@
 simfs_test: simfs_test.c simfs.a
 	gcc -Wall -Wextra -DCTEST_ENABLE -o $@ $^
-	./simfs_test
 
 simfs.a: image.o block.o free.o inode.o mkfs.o pack.o
 	ar rcs $@ $^
