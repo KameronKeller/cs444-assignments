@@ -5,7 +5,6 @@
 #define ZEROS 0
 #define METADATA 7
 
-void initialize_file(unsigned char *block, int value, int size);
 void mkfs(void);
 
 #endif
