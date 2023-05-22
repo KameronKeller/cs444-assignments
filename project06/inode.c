@@ -126,7 +126,7 @@ void read_inode(struct inode *in, int inode_num)
     int block_pointer_address = BLOCK_POINTER_OFFSET;
     for (int i = 0; i < INODE_PTR_COUNT; i++) {
     	in->block_ptr[i] = read_u16(read_buffer + block_offset_bytes + block_pointer_address);
-    	block_pointer_address += 2;
+    	block_pointer_address += INODE_BLOCK_PTR_SIZE;
     }
 
 }
@@ -155,7 +155,7 @@ void write_inode(struct inode *in)
     int block_pointer_address = BLOCK_POINTER_OFFSET;
     for (int i = 0; i < INODE_PTR_COUNT; i++) {
     	write_u16(write_buffer + block_offset_bytes + block_pointer_address, in->block_ptr[i]);
-    	block_pointer_address += 2;
+    	block_pointer_address += INODE_BLOCK_PTR_SIZE;
     }
 
     // Write the block to disk
