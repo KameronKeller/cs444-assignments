@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "ctest.h"
 #include "image.h"
 #include "block.h"
@@ -7,6 +8,7 @@
 #include "inode.h"
 #include "mkfs.h"
 #include "pack.h"
+#include "directory.h"
 
 #define ALL_ONES 255
 #define ZEROS 0
@@ -353,6 +355,77 @@ void test_iput(void)
 	image_close();
 }
 
+void test_directory(void)
+{
+	int root_directory = 0;
+	
+	// Open a new image and make the file system
+	image_open("test_image", READ_WRITE);
+	mkfs();
+
+	// Create the entry struct
+	struct directory_entry *ent = malloc(sizeof(struct directory_entry));
+
+	// Open the directory
+	struct directory *dir = directory_open(root_directory);
+
+	// Read the directory
+	int directory_get_return_value = directory_get(dir, ent);
+
+	// Test the functions
+	char *file_name = ent->name;
+	CTEST_ASSERT(directory_get_return_value == 0, "Test a successful directory get returns 0");
+	CTEST_ASSERT(strcmp(file_name, ".") == 0, "Test the directory entry is '.'");
+	CTEST_ASSERT(ent->inode_num == 0, "Test directory entry inode number is 0");
+
+	// Close the directory and free variables
+	directory_close(dir);
+	free(ent);
+	
+	// Close the image
+	image_close();
+}
+
+void test_directory_failures(void)
+{
+	int root_directory = 0;
+
+	// Open a new image and make the file system
+	image_open("test_image", READ_WRITE);
+	mkfs();
+
+	// Mark all incore inodes in use to cause iget to fail
+	mark_all_incore_in_use();
+	struct directory *dir = directory_open(256);
+
+	// Test that NULL is returned
+	CTEST_ASSERT(dir == NULL, "Test if iget fails, NULL is returned");
+
+	// Reset the incore inodes
+	clear_incore_inodes();
+
+
+	// Create a directory entry struct
+	struct directory_entry *ent = malloc(sizeof(struct directory_entry));
+
+	// Open the directory
+	dir = directory_open(root_directory);
+
+	// Set the offset to an impossible value
+	dir->offset = 999999999;
+
+	// Test that -1 is returned
+	int directory_get_return_value = directory_get(dir, ent);
+	CTEST_ASSERT(directory_get_return_value == -1, "Test a failed directory get returns -1");
+
+	// Close the directory and free variables
+	directory_close(dir);
+	free(ent);
+	
+	// Close the image
+	image_close();
+}
+
 int main(void)
 {
     CTEST_VERBOSE(1);
@@ -369,6 +442,8 @@ int main(void)
 	test_read_write_inode();
 	test_iget();
 	test_iput();
+	test_directory();
+	test_directory_failures();
 
     CTEST_RESULTS();
 
