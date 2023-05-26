@@ -6,6 +6,7 @@
 #include "free.h"
 #include "inode.h"
 #include "mkfs.h"
+#include "pack.h"
 
 #define ALL_ONES 255
 #define ZEROS 0
@@ -184,8 +185,8 @@ void test_alloc(void)
 
 void test_mkfs(void)
 {
-	// Expect next free block to be 7 (0-6 marked as in use)
-	int expected_next_free_block = 7;
+	// Expect next free block to be 8 (0-6 marked as in use, 7 is the root directory)
+	int expected_next_free_block = 8;
 	// Open the image file
 	image_open("test_image", READ_WRITE);
 	
@@ -200,7 +201,26 @@ void test_mkfs(void)
 
 	// Check what the next free block is
 	int next_free = find_free(block);
-	CTEST_ASSERT(next_free == expected_next_free_block, "Test expect next free block to be 7 after mkfs");
+	CTEST_ASSERT(next_free == expected_next_free_block, "Test expect next free block to be 8 after mkfs");
+
+	// Read the root directory block
+	bread(7, block);
+
+	// Unpack the first file's values
+	int inode_number = read_u16(block);
+	char file_name[3]; // size of 3 to allow room for `..\0`
+	memcpy(file_name, block + FILE_NAME_OFFSET, 3);
+
+	CTEST_ASSERT(inode_number == 0, "Test the root inode number is 0");
+	CTEST_ASSERT(strcmp(file_name, ".") == 0, "Test the first directory entry is '.'");
+
+	// Unpack the second file's values
+	inode_number = read_u16(block + FIXED_LENGTH_RECORD_SIZE);
+	memcpy(file_name, block + FIXED_LENGTH_RECORD_SIZE + FILE_NAME_OFFSET, 3);
+	CTEST_ASSERT(inode_number == 0, "Test the root inode number is 0");
+	CTEST_ASSERT(strcmp(file_name, "..") == 0, "Test the first directory entry is '..'");
+
+
 	image_close();
 }
 
