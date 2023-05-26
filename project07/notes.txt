@@ -1,0 +1,21 @@
+# %.o: %.c
+#     gcc -Wall -Wextra -c -o $@ $<
+
+
+simfs_test: simfs_test.c image.o
+	gcc -Wall -Wextra -o $@ $^
+
+
+void test_find_incore(void)
+{
+	clear_incore_inodes();
+	struct inode *free_inode = find_incore_free();
+	free_inode->inode_num = 34;
+	free_inode->ref_count = 1;
+	struct inode *found_incore = find_incore(34);
+	CTEST_ASSERT(memcmp(free_inode, found_incore, INODE_SIZE) == 0, "Test find free inode, then find by inode number");
+	mark_all_incore_in_use();
+	// free_inode = find_incore_free();
+	// CTEST_ASSERT(free_inode == NULL, "Test that no free incore inodes results in NULL");
+
+}
