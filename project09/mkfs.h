@@ -6,7 +6,7 @@
 #define METADATA 7
 #define DIRECTORY_FLAG 2
 #define FIXED_LENGTH_RECORD_SIZE 32
-#define ROOT_DIR_SIZE FIXED_LENGTH_RECORD_SIZE*2
+#define NEW_DIR_SIZE FIXED_LENGTH_RECORD_SIZE*2 // Initial 64 because two entries: `.` and `..`
 #define FILE_NAME_OFFSET 2
 
 void mkfs(void);

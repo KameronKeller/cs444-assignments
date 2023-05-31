@@ -25,7 +25,7 @@ void mkfs(void)
 
 	// Initialize the root inode
 	root_inode->flags = DIRECTORY_FLAG;
-	root_inode->size = ROOT_DIR_SIZE;
+	root_inode->size = NEW_DIR_SIZE;
 	root_inode->block_ptr[0] = get_block_location(directory_block);
 
 	// Create an empty block to store the directory information
