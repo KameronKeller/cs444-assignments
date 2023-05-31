@@ -43,5 +43,6 @@ void read_inode(struct inode *in, int inode_num);
 void write_inode(struct inode *in);
 struct inode *iget(int inode_num);
 void iput(struct inode *in);
+struct inode *namei(char *path);
 
 #endif
