@@ -209,4 +209,7 @@ void iput(struct inode *in)
 
 }
 
-
+struct inode *namei(char *path)
+{
+	return iget(ROOT_INODE_NUM);
+}
