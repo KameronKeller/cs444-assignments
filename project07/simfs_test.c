@@ -9,6 +9,7 @@
 #include "mkfs.h"
 #include "pack.h"
 #include "directory.h"
+#include "ls.h"
 
 #define ALL_ONES 255
 #define ZEROS 0
@@ -426,6 +427,17 @@ void test_directory_failures(void)
 	image_close();
 }
 
+void ls_output(void)
+{
+	image_open("test_image", READ_WRITE);
+	mkfs();
+	printf("\n==== Test output of ls() ====\n");
+
+	ls();
+
+	image_close();
+}
+
 int main(void)
 {
     CTEST_VERBOSE(1);
@@ -444,6 +456,7 @@ int main(void)
 	test_iput();
 	test_directory();
 	test_directory_failures();
+	ls_output();
 
     CTEST_RESULTS();
 
