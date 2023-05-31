@@ -22,7 +22,7 @@ struct directory *directory_open(int inode_num)
 
     // Initialize directory
     open_directory->inode = directory_inode;
-    open_directory->offset = 0;
+    open_directory->offset = INITIAL_OFFSET;
 
     // Return the open directory
     return open_directory;
@@ -34,7 +34,7 @@ int directory_get(struct directory *dir, struct directory_entry *ent)
     unsigned int offset = dir->offset;
     unsigned int size = dir->inode->size;
     if (offset >= size) {
-        return -1;
+        return FAILURE;
     }
 
     // Calculate the block index and block number
@@ -52,9 +52,11 @@ int directory_get(struct directory *dir, struct directory_entry *ent)
     ent->inode_num = read_u16(block + offset_in_block);
 
     // Copy the file name
-    strcpy(ent->name, (char *)block + FILE_NAME_OFFSET);
+    strcpy(ent->name, (char *)block + offset + FILE_NAME_OFFSET);
 
-    return 0;
+    dir->offset = offset + FIXED_LENGTH_RECORD_SIZE;
+
+    return SUCCESS;
 }
 
 void directory_close(struct directory *d)
