@@ -6,6 +6,7 @@
 #include "block.h"
 #include "mkfs.h"
 #include "pack.h"
+#include "dirbasename.h"
 
 struct directory *directory_open(int inode_num)
 {
@@ -63,4 +64,65 @@ void directory_close(struct directory *d)
 {
     iput(d->inode);
     free(d);
+}
+
+int directory_make(char *path)
+{
+    char directory_path[1024];
+    char directory_name[1024];
+    get_dirname(path, directory_path);
+    get_basename(path, directory_name);
+
+    // Find the inode for the parent directory that will hold the new entry.
+    struct inode *parent_inode = namei(directory_path);
+
+    // Create a new inode for the new directory.
+    struct inode *new_directory_inode = ialloc();
+
+    // Create a new data block for the new directory entries.
+    int directory_block = alloc();
+
+    // Get the root inode
+    // struct inode *parent_inode = namei(directory_path);
+
+    // Create an empty block to store the directory information
+	unsigned char block[BLOCK_SIZE];
+
+    // Write the "." file to the block
+	write_u16(block, new_directory_inode->inode_num);
+	strcpy((char *)block + FILE_NAME_OFFSET, ".");
+
+    // Write the ".." file to the block
+	write_u16(block + FIXED_LENGTH_RECORD_SIZE, parent_inode->inode_num);
+	strcpy((char *)block + FILE_NAME_OFFSET + FIXED_LENGTH_RECORD_SIZE, "..");
+
+    // Initialize the root inode
+	new_directory_inode->flags = DIRECTORY_FLAG;
+	new_directory_inode->size = NEW_DIR_SIZE;
+	new_directory_inode->block_ptr[0] = get_block_location(directory_block);
+
+    // Write the block to disk
+	bwrite(directory_block, block);
+
+    // Find the block that will contain the new directory entry
+    short parent_dir_data_block_num = parent_inode->block_ptr[0] / BLOCK_SIZE;
+    bread(parent_dir_data_block_num, block);
+    void *directory_data_location = block + parent_inode->size;
+
+    // Write the inode number to the directory data block
+    write_u16(directory_data_location, new_directory_inode->inode_num);
+
+    // Copy the directory name to the data block
+    strcpy((char *)directory_data_location + FILE_NAME_OFFSET, directory_name);
+
+    // Write the block to disk
+    bwrite(parent_dir_data_block_num, block);
+
+    // Update the parent directories size
+    parent_inode->size += FIXED_LENGTH_RECORD_SIZE;
+
+    iput(new_directory_inode);
+    iput(parent_inode);
+
+    return 0;
 }
