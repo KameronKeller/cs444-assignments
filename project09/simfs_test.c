@@ -433,17 +433,20 @@ void ls_output(void)
 	mkfs();
 	printf("\n==== Test output of ls() ====\n");
 
-	ls();
+	ls(0);
 
 	image_close();
 }
 
 void test_namei(void)
 {
+	unsigned int root_inode = 0;
 	image_open("test_image", READ_WRITE);
 	mkfs();
 
-	struct inode *in = namei("/foo/bar/baz");
+	// namei only returns root node currently
+	struct inode *in = namei("/");
+	CTEST_ASSERT(in->inode_num == root_inode, "Test namei returns root inode number");
 
 	image_close();
 }
@@ -453,45 +456,53 @@ void test_directory_make_failures(void)
 	image_open("test_image", READ_WRITE);
 	mkfs();
 
+	// Create an invalid directory name
 	int inode_num = directory_make("/foo/");
 	CTEST_ASSERT(inode_num == -1, "Test a directory path can't end with /");
+
+	// Create an invalid directory name
 	inode_num = directory_make("foo");
 	CTEST_ASSERT(inode_num == -1, "Test a directory path must begin with with /");
 
-	// mark_all_incore_in_use();
-	// inode_num = directory_make("/baz");
-	// CTEST_ASSERT(inode_num == -1, "Test no incore inodes results in failure");
-	// clear_incore_inodes();
+	// Copy the block map as a backup
+	unsigned char original_state[BLOCK_SIZE];
+	bread(BLOCK_MAP, original_state);
 
-	// unsigned char original_state[BLOCK_SIZE];
-	// bread(BLOCK_MAP, original_state);
-	// unsigned char test_block[BLOCK_SIZE];
-	// memset(test_block, 255, BLOCK_SIZE);
-	// bwrite(BLOCK_MAP, test_block);
-	// inode_num = directory_make("/baz");
-	// CTEST_ASSERT(inode_num == -1, "Test no available data blocks results in failure");
-	// bwrite(BLOCK_MAP, original_state);
+	// Create an empty block and fill with 1's
+	unsigned char test_block[BLOCK_SIZE];
+	memset(test_block, 255, BLOCK_SIZE);
+
+	// Overwrite the block map
+	bwrite(BLOCK_MAP, test_block);
+	inode_num = directory_make("/baz");
+	CTEST_ASSERT(inode_num == -1, "Test no available data blocks results in failure");
+
+	// Restore the block map backup
+	bwrite(BLOCK_MAP, original_state);
 
 	image_close();
 }
 
 void test_directory_make_success(void)
 {
-	int root_directory = 0;
+	unsigned int expected_inode_number = 1;
 	image_open("test_image", READ_WRITE);
 	mkfs();
 
+	// Create a new directory
 	int directory_creation_status = directory_make("/foo");
 	CTEST_ASSERT(directory_creation_status == 0, "Test a successful directory creation returns 0");
 	
-	struct directory *dir = directory_open(root_directory);
+	// Open the directory
+	struct directory *dir = directory_open(expected_inode_number);
 	struct directory_entry *ent = malloc(sizeof(struct directory_entry));
+	
+	// Verify the entry is accurent
 	directory_get(dir, ent);
-	CTEST_ASSERT(strcmp(ent->name, "foo") == 0, "Test a created directory returns 0 with directory get");
-	// CTEST_ASSERT(ent->inode_num == inode_num, "Test the retrieved directory entry matches the inode number returned from directory make");
+	CTEST_ASSERT(strcmp(ent->name, ".") == 0, "Test a created directory returns 0 with directory get");
+	CTEST_ASSERT(ent->inode_num == expected_inode_number, "Test the retrieved directory entry matches the inode number returned from directory make");
 
 	directory_make("/foo/bar");
-	ls();
 	image_close();
 }
 
@@ -499,24 +510,24 @@ int main(void)
 {
     CTEST_VERBOSE(1);
 
-	// test_image_open_and_close();
-	// test_get_block_location();
-	// test_block_write_and_read();
-	// test_set_free();
-	// test_find_free();
-	// test_ialloc();
-	// test_alloc();
-	// test_mkfs();
-	// test_find_incore();
-	// test_read_write_inode();
-	// test_iget();
-	// test_iput();
-	// test_directory();
-	// test_directory_failures();
-	ls_output();
+	test_image_open_and_close();
+	test_get_block_location();
+	test_block_write_and_read();
+	test_set_free();
+	test_find_free();
+	test_ialloc();
+	test_alloc();
+	test_mkfs();
+	test_find_incore();
+	test_read_write_inode();
+	test_iget();
+	test_iput();
+	test_directory();
+	test_directory_failures();
 	test_namei();
 	test_directory_make_failures();
 	test_directory_make_success();
+	ls_output();
 
     CTEST_RESULTS();
 
