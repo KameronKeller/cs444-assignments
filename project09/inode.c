@@ -57,6 +57,7 @@ struct inode *ialloc(void)
 		struct inode *incore_inode = iget(num);
 	    // If not found:
 	    if (incore_inode == NULL) {
+			set_free(block, num, FREE);
 	    	return NULL;
 	    } else {
 		    // Initialize the inode:
@@ -74,7 +75,8 @@ struct inode *find_incore_free(void)
 	// Loop over the incore array
 	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
 		// For each incore, check if reference count is 0
-		struct inode *temp_incore = &incore[i];
+		// struct inode *temp_incore = &incore[i]; // My original method
+		struct inode *temp_incore = incore + i; // After Beej's feedback
 
 		// If it is, return it
 		if (temp_incore->ref_count == 0) {
@@ -91,7 +93,8 @@ struct inode *find_incore(unsigned int inode_num)
 	// Loop over the incore array
 	for (int i = 0; i < MAX_SYS_OPEN_FILES; i++) {
 		// For each incore, check if reference count is 0
-		struct inode *temp_incore = &incore[i];
+		// struct inode *temp_incore = &incore[i]; // My original method
+		struct inode *temp_incore = incore + i; // Beej's feedback
 
 		// If it is, return it
 		if (temp_incore->inode_num == inode_num && temp_incore->ref_count != 0) {
@@ -211,5 +214,6 @@ void iput(struct inode *in)
 
 struct inode *namei(char *path)
 {
+	(void) path; // Silence unused variable warning in stubbed version of function
 	return iget(ROOT_INODE_NUM);
 }
