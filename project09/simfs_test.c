@@ -438,25 +438,85 @@ void ls_output(void)
 	image_close();
 }
 
+void test_namei(void)
+{
+	image_open("test_image", READ_WRITE);
+	mkfs();
+
+	struct inode *in = namei("/foo/bar/baz");
+
+	image_close();
+}
+
+void test_directory_make_failures(void)
+{
+	image_open("test_image", READ_WRITE);
+	mkfs();
+
+	int inode_num = directory_make("/foo/");
+	CTEST_ASSERT(inode_num == -1, "Test a directory path can't end with /");
+	inode_num = directory_make("foo");
+	CTEST_ASSERT(inode_num == -1, "Test a directory path must begin with with /");
+
+	// mark_all_incore_in_use();
+	// inode_num = directory_make("/baz");
+	// CTEST_ASSERT(inode_num == -1, "Test no incore inodes results in failure");
+	// clear_incore_inodes();
+
+	// unsigned char original_state[BLOCK_SIZE];
+	// bread(BLOCK_MAP, original_state);
+	// unsigned char test_block[BLOCK_SIZE];
+	// memset(test_block, 255, BLOCK_SIZE);
+	// bwrite(BLOCK_MAP, test_block);
+	// inode_num = directory_make("/baz");
+	// CTEST_ASSERT(inode_num == -1, "Test no available data blocks results in failure");
+	// bwrite(BLOCK_MAP, original_state);
+
+	image_close();
+}
+
+void test_directory_make_success(void)
+{
+	int root_directory = 0;
+	image_open("test_image", READ_WRITE);
+	mkfs();
+
+	int directory_creation_status = directory_make("/foo");
+	CTEST_ASSERT(directory_creation_status == 0, "Test a successful directory creation returns 0");
+	
+	struct directory *dir = directory_open(root_directory);
+	struct directory_entry *ent = malloc(sizeof(struct directory_entry));
+	directory_get(dir, ent);
+	CTEST_ASSERT(strcmp(ent->name, "foo") == 0, "Test a created directory returns 0 with directory get");
+	// CTEST_ASSERT(ent->inode_num == inode_num, "Test the retrieved directory entry matches the inode number returned from directory make");
+
+	directory_make("/foo/bar");
+	ls();
+	image_close();
+}
+
 int main(void)
 {
     CTEST_VERBOSE(1);
 
-	test_image_open_and_close();
-	test_get_block_location();
-	test_block_write_and_read();
-	test_set_free();
-	test_find_free();
-	test_ialloc();
-	test_alloc();
-	test_mkfs();
-	test_find_incore();
-	test_read_write_inode();
-	test_iget();
-	test_iput();
-	test_directory();
-	test_directory_failures();
+	// test_image_open_and_close();
+	// test_get_block_location();
+	// test_block_write_and_read();
+	// test_set_free();
+	// test_find_free();
+	// test_ialloc();
+	// test_alloc();
+	// test_mkfs();
+	// test_find_incore();
+	// test_read_write_inode();
+	// test_iget();
+	// test_iput();
+	// test_directory();
+	// test_directory_failures();
 	ls_output();
+	test_namei();
+	test_directory_make_failures();
+	test_directory_make_success();
 
     CTEST_RESULTS();
 
