@@ -66,24 +66,46 @@ void directory_close(struct directory *d)
     free(d);
 }
 
+int invalid_path(char *path)
+{
+    char last_char = path[strlen(path) - 1];
+    char first_char = path[0];
+    if (strcmp(path, "/") == 0) {
+        return 1;
+    } else if (last_char == '/' || first_char != '/') {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 int directory_make(char *path)
 {
+    // Verify the path is valid
+    if (invalid_path(path)) {
+        return -1;
+    }
+
+    // Get the root directory and the directory name
     char directory_path[1024];
     char directory_name[1024];
     get_dirname(path, directory_path);
     get_basename(path, directory_name);
 
-    // Find the inode for the parent directory that will hold the new entry.
-    struct inode *parent_inode = namei(directory_path);
-
     // Create a new inode for the new directory.
     struct inode *new_directory_inode = ialloc();
+    if (new_directory_inode == NULL) {
+        return -1;
+    }
 
     // Create a new data block for the new directory entries.
     int directory_block = alloc();
+    if (directory_block == -1) {
+        return -1;
+    }
 
-    // Get the root inode
-    // struct inode *parent_inode = namei(directory_path);
+    // Find the inode for the parent directory that will hold the new entry.
+    struct inode *parent_inode = namei(directory_path);
 
     // Create an empty block to store the directory information
 	unsigned char block[BLOCK_SIZE];
@@ -121,6 +143,7 @@ int directory_make(char *path)
     // Update the parent directories size
     parent_inode->size += FIXED_LENGTH_RECORD_SIZE;
 
+    // Free up the inodes
     iput(new_directory_inode);
     iput(parent_inode);
 
