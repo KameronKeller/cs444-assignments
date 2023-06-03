@@ -379,6 +379,15 @@ void test_directory(void)
 	CTEST_ASSERT(strcmp(file_name, ".") == 0, "Test the directory entry is '.'");
 	CTEST_ASSERT(ent->inode_num == 0, "Test directory entry inode number is 0");
 
+	directory_get_return_value = directory_get(dir, ent);
+	CTEST_ASSERT(directory_get_return_value == 0, "Test a successful directory get returns 0");
+	CTEST_ASSERT(strcmp(file_name, "..") == 0, "Test the directory entry is '.'");
+	CTEST_ASSERT(ent->inode_num == 0, "Test directory entry inode number is 0");
+
+	// Test that the directory fails if the offset is greater than the size of the directory
+	directory_get_return_value = directory_get(dir, ent);
+	CTEST_ASSERT(directory_get_return_value == -1, "Test directory get fails if the offset is greater than the size of the directory");
+
 	// Close the directory and free variables
 	directory_close(dir);
 	free(ent);
