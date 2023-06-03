@@ -379,6 +379,15 @@ void test_directory(void)
 	CTEST_ASSERT(strcmp(file_name, ".") == 0, "Test the directory entry is '.'");
 	CTEST_ASSERT(ent->inode_num == 0, "Test directory entry inode number is 0");
 
+	directory_get_return_value = directory_get(dir, ent);
+	CTEST_ASSERT(directory_get_return_value == 0, "Test a successful directory get returns 0");
+	CTEST_ASSERT(strcmp(file_name, "..") == 0, "Test the directory entry is '.'");
+	CTEST_ASSERT(ent->inode_num == 0, "Test directory entry inode number is 0");
+
+	// Test that the directory fails if the offset is greater than the size of the directory
+	directory_get_return_value = directory_get(dir, ent);
+	CTEST_ASSERT(directory_get_return_value == -1, "Test directory get fails if the offset is greater than the size of the directory");
+
 	// Close the directory and free variables
 	directory_close(dir);
 	free(ent);
@@ -457,12 +466,12 @@ void test_directory_make_failures(void)
 	mkfs();
 
 	// Create an invalid directory name
-	int inode_num = directory_make("/foo/");
-	CTEST_ASSERT(inode_num == -1, "Test a directory path can't end with /");
+	int directory_make_status = directory_make("/foo/");
+	CTEST_ASSERT(directory_make_status == -1, "Test a directory path can't end with /");
 
 	// Create an invalid directory name
-	inode_num = directory_make("foo");
-	CTEST_ASSERT(inode_num == -1, "Test a directory path must begin with with /");
+	directory_make_status = directory_make("foo");
+	CTEST_ASSERT(directory_make_status == -1, "Test a directory path must begin with with /");
 
 	// Copy the block map as a backup
 	unsigned char original_state[BLOCK_SIZE];
@@ -474,11 +483,19 @@ void test_directory_make_failures(void)
 
 	// Overwrite the block map
 	bwrite(BLOCK_MAP, test_block);
-	inode_num = directory_make("/baz");
-	CTEST_ASSERT(inode_num == -1, "Test no available data blocks results in failure");
+	directory_make_status = directory_make("/baz");
+	CTEST_ASSERT(directory_make_status == -1, "Test no available data blocks results in failure");
 
 	// Restore the block map backup
 	bwrite(BLOCK_MAP, original_state);
+
+	// Copy the inoe map as a backup
+	bread(INODE_MAP, original_state);
+
+	// Overwrite the inode map with all 1's
+	bwrite(INODE_MAP, test_block);
+	directory_make_status = directory_make("/baz");
+	CTEST_ASSERT(directory_make_status == -1, "Test no available inode blocks results in failure");
 
 	image_close();
 }
